@@ -822,12 +822,7 @@ func (c *ClientConn) Connect(user, pass string) error {
 	if c.ClientId == "" {
 		c.ClientId = fmt.Sprint(cliRand.Int63())
 	}
-	req := &proto.Connect{
-		ProtocolName:    "MQIsdp",
-		ProtocolVersion: 3,
-		ClientId:        c.ClientId,
-		CleanSession:    true,
-	}
+	req := &proto.Connect{}
 	if user != "" {
 		req.UsernameFlag = true
 		req.PasswordFlag = true
@@ -835,7 +830,19 @@ func (c *ClientConn) Connect(user, pass string) error {
 		req.Password = pass
 	}
 
-	c.sync(req)
+	return c.ConnectCustom(req)
+}
+
+// ConnectCustom sends a custom connect message, allowing the other properties
+// to be set.
+func (c *ClientConn) ConnectCustom(message *proto.Connect) error {
+
+	message.ProtocolName = "MQIsdp"
+	message.ProtocolVersion = 3
+	message.CleanSession = true
+	message.ClientId = c.ClientId
+
+	c.sync(message)
 	ack := <-c.connack
 	return ConnectionErrors[ack.ReturnCode]
 }
